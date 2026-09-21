@@ -46,10 +46,30 @@ Public URL (this workshop cluster):
 - **TLS secret** referenced by the Gateway HTTPS listener (here: `cert-manager-ingress-cert` in `openshift-ingress`)
 - On platforms **without** a cloud LoadBalancer (e.g. workshop / `platform: None`), an **OpenShift Route** (or equivalent) to front the Gateway Service
 
+See [OpenShift version support](#openshift-version-support) for 4.18 vs 4.19+ considerations.
+
 ### Tools
 
 - `oc` (or `kubectl`)
 - `curl` and `bash` for `scripts/test-echo-cors.sh`
+
+## OpenShift version support
+
+This repository targets **OpenShift 4.19+**, where Gateway API via the Ingress Operator is **GA**. It was validated on **OpenShift 4.21**.
+
+| | OpenShift 4.18 | This demo (4.19+ / validated 4.21) |
+|---|---|---|
+| Support level | **Developer Preview** (not GA) | **GA** |
+| Enablement | `GatewayAPI` feature gate (+ preview setup steps) | Create `GatewayClass` only |
+| `controllerName` | `openshift.io/gateway-controller` | `openshift.io/gateway-controller/v1` |
+| Mesh stack | OSSM **2.6** / Istio ~1.20 | OSSM **3.x** / Istio (e.g. 1.27) |
+
+**Implications:**
+
+- **Production / Red Hat–supported use:** use **OpenShift 4.19 or later**. Do not treat the 4.18 preview as a supported baseline for this pattern.
+- **Drop-in of these manifests on 4.18:** **no**. `manifests/00-gatewayclass.yaml` uses `openshift.io/gateway-controller/v1`, which the 4.18 preview controller does not accept; the GatewayClass would be ignored.
+- **Technically on 4.18 preview:** possible only with adaptation — enable the `GatewayAPI` feature gate, use controller name `openshift.io/gateway-controller`, and re-check Istio/Envoy **vhost** names for the EnvoyFilter. The `direct_response` EnvoyFilter approach can still work on that dataplane, but install steps and resource details differ from this repo.
+- Prefer **4.19+** for anything beyond experiments; keep this project’s manifests aligned with the GA controller name and OSSM 3.x dataplane.
 
 ## Deploy
 
