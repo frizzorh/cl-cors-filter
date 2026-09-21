@@ -1,0 +1,67 @@
+# Short-circuit CORS preflight at the gateway proxy using native Envoy
+# direct_response (same pattern as Kuadrant mcp-gateway preflight EnvoyFilter).
+# OpenShift Gateway API HTTPRoute CRD has no CORS/DirectResponse filter.
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: echo-cors-preflight
+  namespace: openshift-ingress
+  labels:
+    app: http-echo
+    gateway.networking.k8s.io/gateway-name: echo-gateway
+spec:
+  workloadSelector:
+    labels:
+      gateway.networking.k8s.io/gateway-name: echo-gateway
+  configPatches:
+  # External HTTPS is edge-terminated by the OpenShift Route, then forwarded
+  # to the gateway as HTTP on :80.
+  - applyTo: HTTP_ROUTE
+    match:
+      context: GATEWAY
+      routeConfiguration:
+        vhost:
+          name: "echo.gwapi.apps.cluster-k5msd.dyn.redhatworkshops.io:80"
+    patch:
+      operation: INSERT_FIRST
+      value:
+        name: echo-cors-preflight
+        match:
+          prefix: "/"
+          headers:
+          - name: ":method"
+            exact_match: "OPTIONS"
+        direct_response:
+          status: 204
+        response_headers_to_add:
+        - header: { key: access-control-allow-origin, value: "*" }
+        - header: { key: access-control-allow-methods, value: "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD" }
+        - header: { key: access-control-allow-headers, value: "Content-Type, Authorization, X-Requested-With, Accept, Origin, X-Demo" }
+        - header: { key: access-control-expose-headers, value: "*" }
+        - header: { key: access-control-max-age, value: "86400" }
+        - header: { key: content-length, value: "0" }
+  # Also cover direct HTTPS on the gateway listener.
+  - applyTo: HTTP_ROUTE
+    match:
+      context: GATEWAY
+      routeConfiguration:
+        vhost:
+          name: "echo.gwapi.apps.cluster-k5msd.dyn.redhatworkshops.io:443"
+    patch:
+      operation: INSERT_FIRST
+      value:
+        name: echo-cors-preflight
+        match:
+          prefix: "/"
+          headers:
+          - name: ":method"
+            exact_match: "OPTIONS"
+        direct_response:
+          status: 204
+        response_headers_to_add:
+        - header: { key: access-control-allow-origin, value: "*" }
+        - header: { key: access-control-allow-methods, value: "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD" }
+        - header: { key: access-control-allow-headers, value: "Content-Type, Authorization, X-Requested-With, Accept, Origin, X-Demo" }
+        - header: { key: access-control-expose-headers, value: "*" }
+        - header: { key: access-control-max-age, value: "86400" }
+        - header: { key: content-length, value: "0" }

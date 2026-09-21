@@ -1,0 +1,20 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: echo-gateway-http
+  namespace: openshift-ingress
+  labels:
+    app: http-echo
+    gateway.networking.k8s.io/gateway-name: echo-gateway
+spec:
+  host: echo.gwapi.apps.cluster-k5msd.dyn.redhatworkshops.io
+  to:
+    kind: Service
+    name: echo-gateway-openshift-default
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None

@@ -1,0 +1,27 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: echo-gateway
+  namespace: openshift-ingress
+spec:
+  gatewayClassName: openshift-default
+  listeners:
+  - name: http
+    hostname: "*.gwapi.apps.cluster-k5msd.dyn.redhatworkshops.io"
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: All
+  - name: https
+    hostname: "*.gwapi.apps.cluster-k5msd.dyn.redhatworkshops.io"
+    port: 443
+    protocol: HTTPS
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - name: cert-manager-ingress-cert
+        kind: Secret
+    allowedRoutes:
+      namespaces:
+        from: All
